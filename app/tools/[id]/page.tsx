@@ -107,7 +107,7 @@ export default async function ToolPage({
                             pricePerDay={tool.pricePerDay} 
                             isLoggedIn={!!session} 
                             isOwner={(session?.user as any)?.id === tool.ownerId}
-                            bookedDates={tool.reservations.filter(r => r.statut === "valide")}
+                            bookedDates={tool.reservations.filter((r: any) => r.statut === "valide")}
                         />
                     </div>
                 </div>
