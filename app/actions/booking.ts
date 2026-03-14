@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isToolAvailable } from "@/lib/availability";
 
-export async function createReservation(toolId: string, startDate: Date, endDate: Date, totalPrice: number) {
+export async function createReservation(toolId: string, startDate: Date, endDate: Date, totalPrice: number, proposedPrice?: number) {
     try {
         const session = await getServerSession(authOptions);
 
@@ -15,7 +15,7 @@ export async function createReservation(toolId: string, startDate: Date, endDate
         }
 
         const userId = (session.user as any).id;
-        console.log("CreateReservation started", { toolId, userId, startDate, endDate, totalPrice });
+        console.log("CreateReservation started", { toolId, userId, startDate, endDate, totalPrice, proposedPrice });
 
         if (!userId) {
             return { success: false, error: "Utilisateur non authentifié correctement." };
@@ -56,6 +56,7 @@ export async function createReservation(toolId: string, startDate: Date, endDate
                 date_debut: start,
                 date_fin: end,
                 prix_total: totalPrice,
+                prix_propose: proposedPrice || null,
                 outil_id: toolId,
                 locataire_id: userId,
                 proprietaire_id: tool.ownerId,
@@ -96,8 +97,12 @@ export async function createReservation(toolId: string, startDate: Date, endDate
             return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         };
 
-        const messageContent = `Bonjour, je souhaiterais réserver votre ${tool.title} du ${formatDate(startDate)} au ${formatDate(endDate)}.`;
+        let messageContent = `Bonjour, je souhaiterais réserver votre ${tool.title} du ${formatDate(startDate)} au ${formatDate(endDate)}.`;
         
+        if (proposedPrice && proposedPrice !== totalPrice) {
+            messageContent += ` Je vous propose un prix de ${proposedPrice}DT pour cette période.`;
+        }
+
         await prisma.message.create({
             data: {
                 content: messageContent,

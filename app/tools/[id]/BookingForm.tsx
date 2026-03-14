@@ -9,24 +9,29 @@ import Calendar from "@/app/components/Calendar";
 import { DateRange } from "react-day-picker";
 import { format, differenceInDays, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import { isRangeAvailable } from "@/lib/calendar-utils";
 
-export default function BookingForm({ 
-    toolId, 
-    pricePerDay, 
+export default function BookingForm({
+    toolId,
+    pricePerDay,
     isLoggedIn,
     isOwner = false,
     bookedDates = []
-}: { 
-    toolId: string, 
+}: {
+    toolId: string,
     pricePerDay: number,
     isLoggedIn: boolean,
     isOwner?: boolean,
     bookedDates?: any[]
 }) {
     const [range, setRange] = useState<DateRange | undefined>();
+    const [proposedPrice, setProposedPrice] = useState<number | undefined>();
+    const [isNegotiationOpen, setIsNegotiationOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const router = useRouter();
+
+    const minPrice = pricePerDay ? 0.8 * pricePerDay : 0;
 
     const calculateTotal = () => {
         if (!range?.from || !range?.to) return 0;
@@ -38,7 +43,7 @@ export default function BookingForm({
 
     const handleBooking = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!isLoggedIn) return;
 
         if (!range?.from || !range?.to) {
@@ -46,10 +51,25 @@ export default function BookingForm({
             return;
         }
 
+        // Check for overlaps
+        if (!isRangeAvailable({ from: range.from, to: range.to }, bookedDates)) {
+            setMessage({ type: 'error', text: "Certaines dates dans votre sélection sont déjà réservées." });
+            return;
+        }
+
+        if (proposedPrice) {
+            const diffDays = differenceInDays(range.to, range.from) + 1;
+            const absoluteMin = Math.round(diffDays * pricePerDay * 0.8);
+            if (proposedPrice < absoluteMin) {
+                setMessage({ type: 'error', text: `Le prix proposé ne peut pas être inférieur à ${absoluteMin}DT ` });
+                return;
+            }
+        }
+
         setIsLoading(true);
         setMessage(null);
 
-        const result = await createReservation(toolId, range.from, range.to, total);
+        const result = await createReservation(toolId, range.from, range.to, total, proposedPrice);
 
         if (result.success && result.conversationId) {
             setMessage({ type: 'success', text: isOwner ? "Dates bloquées avec succès !" : "Réservation confirmée ! Redirection..." });
@@ -74,14 +94,14 @@ export default function BookingForm({
                             Vous devez être connecté pour pouvoir réserver cet outil.
                         </p>
                     </div>
-                    <Link 
-                        href="/login" 
+                    <Link
+                        href="/login"
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg"
                     >
                         Se connecter
                     </Link>
-                    <Link 
-                        href="/register" 
+                    <Link
+                        href="/register"
                         className="text-blue-600 hover:underline text-sm font-medium"
                     >
                         Créer un compte gratuitement
@@ -98,11 +118,14 @@ export default function BookingForm({
                     <CalendarIcon size={18} className="text-blue-600" />
                     Choisir vos dates
                 </label>
-                
-                <Calendar 
+
+                <Calendar
                     bookedDates={bookedDates}
                     selectedRange={range}
-                    onRangeChange={setRange}
+                    onRangeChange={(newRange) => {
+                        setRange(newRange);
+                        setMessage(null);
+                    }}
                     className="mx-auto"
                 />
             </div>
@@ -131,14 +154,61 @@ export default function BookingForm({
             )}
 
             {total > 0 && !isOwner && (
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-slate-600 font-medium">Prix unitaire</span>
-                        <span className="text-slate-900 font-semibold">{pricePerDay}€ / j</span>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-4">
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-slate-600 font-medium">Prix unitaire</span>
+                            <span className="text-slate-900 font-semibold">{pricePerDay}DT / j</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-slate-200 pt-2">
+                            <span className="text-slate-800 font-bold">Total TTC (Standard)</span>
+                            <span className="text-slate-500 font-bold">{total}DT</span>
+                        </div>
                     </div>
+
+                    <div className="border border-blue-100 rounded-lg overflow-hidden transition-all duration-300">
+                        <button
+                            type="button"
+                            onClick={() => setIsNegotiationOpen(!isNegotiationOpen)}
+                            className="w-full flex items-center justify-between p-3 bg-white hover:bg-blue-50/50 transition-colors"
+                        >
+                            <span className="text-xs font-bold text-blue-900 uppercase tracking-wide">
+                                Proposer un prix (Facultatif)
+                            </span>
+                            <div className={`transition-transform duration-200 ${isNegotiationOpen ? 'rotate-180' : ''}`}>
+                                <Info size={16} className="text-blue-400" />
+                            </div>
+                        </button>
+
+                        {isNegotiationOpen && (
+                            <div className="p-3 bg-white border-t border-blue-50 animate-in slide-in-from-top-2 duration-200">
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-grow">
+                                        <input
+                                            type="number"
+                                            value={proposedPrice || ''}
+                                            onChange={(e) => {
+                                        setProposedPrice(e.target.value ? Number(e.target.value) : undefined);
+                                        setMessage(null);
+                                    }}
+                                            placeholder={total.toString()}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">DT</span>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-500 mt-2 leading-tight">
+                                    Le prix minimal accepté pour cette période est de <span className="font-bold text-blue-600">{Math.round(total * 0.8)}DT</span>.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex justify-between items-center border-t border-slate-200 pt-2">
-                        <span className="text-slate-800 font-bold">Total TTC</span>
-                        <span className="text-blue-600 font-black text-xl">{total}€</span>
+                        <span className="text-slate-900 font-black">Total à payer</span>
+                        <span className="text-blue-600 font-black text-2xl">
+                            {proposedPrice || total}DT
+                        </span>
                     </div>
                 </div>
             )}
@@ -160,11 +230,10 @@ export default function BookingForm({
             <button
                 type="submit"
                 disabled={isLoading || !range?.from || !range?.to}
-                className={`w-full flex items-center justify-center gap-2 font-bold py-4 px-4 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
-                    isOwner 
-                    ? "bg-slate-900 hover:bg-black text-white" 
+                className={`w-full flex items-center justify-center gap-2 font-bold py-4 px-4 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${isOwner
+                    ? "bg-slate-900 hover:bg-black text-white"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
+                    }`}
             >
                 {isLoading ? (
                     "Action en cours..."
@@ -176,7 +245,7 @@ export default function BookingForm({
                 ) : (
                     <>
                         <CalendarIcon size={20} />
-                        Réserver cet outil
+                        Demandez une réservation
                     </>
                 )}
             </button>

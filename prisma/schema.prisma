@@ -137,6 +137,7 @@ model Reservation {
   date_fin     DateTime
   statut       String   @default("en_attente") // en_attente, valide, annule, contre_offre
   prix_total   Float
+  prix_propose Float?
 
   // Relations
   outil        Tool     @relation(fields: [outil_id], references: [id])

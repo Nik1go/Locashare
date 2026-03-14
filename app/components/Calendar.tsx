@@ -50,7 +50,10 @@ export default function Calendar({
             backgroundColor: "#fee2e2", 
             color: "#b91c1c",
             fontWeight: "bold",
-            borderRadius: "4px",
+            borderTopLeftRadius: "4px",
+            borderTopRightRadius: "4px",
+            borderBottomLeftRadius: "4px",
+            borderBottomRightRadius: "4px",
           },
           selected: { 
             backgroundColor: "#2563eb", 

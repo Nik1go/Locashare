@@ -49,7 +49,19 @@ export async function getConversation(id: string) {
                     reservation: true
                 }
             },
-            tool: true
+            tool: {
+                include: {
+                    reservations: {
+                        where: {
+                            statut: "valide"
+                        },
+                        select: {
+                            date_debut: true,
+                            date_fin: true
+                        }
+                    }
+                }
+            }
         }
     });
 
@@ -145,7 +157,11 @@ export async function updateReservationStatus(reservationId: string, status: str
 
     const updated = await prisma.reservation.update({
         where: { id: reservationId },
-        data: { statut: status }
+        data: { 
+            statut: status,
+            // Si on valide et qu'il y a un prix proposé, on l'actera comme prix final
+            prix_total: (status === "valide" && reservation.prix_propose) ? reservation.prix_propose : reservation.prix_total
+        }
     });
 
     if (conversationId) {
@@ -173,6 +189,14 @@ export async function updateReservationDates(reservationId: string, startDate: D
     });
 
     if (!reservation) throw new Error("Réservation non trouvée");
+
+    // Vérifier la disponibilité de l'outil pour les nouvelles dates
+    // On exclut la réservation actuelle de la vérification
+    const { isToolAvailable } = await import("@/lib/availability");
+    const available = await isToolAvailable(reservation.outil_id, startDate, endDate, reservationId);
+    if (!available) {
+        throw new Error("Ces dates sont déjà réservées. Veuillez en choisir d'autres.");
+    }
     
     // Autoriser soit le proprio soit le locataire à proposer une contre-offre
     const isOwner = reservation.proprietaire_id === userId;
@@ -185,6 +209,41 @@ export async function updateReservationDates(reservationId: string, startDate: D
         data: { 
             date_debut: startDate,
             date_fin: endDate,
+            statut: "contre_offre"
+        }
+    });
+
+    revalidatePath(`/conversations/${conversationId}`);
+    revalidatePath("/dashboard");
+    return updated;
+}
+
+export async function updateReservationPrice(reservationId: string, proposedPrice: number, conversationId: string) {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) throw new Error("Non autorisé");
+
+    const userId = (session.user as any).id;
+
+    if (!reservationId || typeof reservationId !== 'string') {
+        throw new Error("ID de réservation invalide");
+    }
+
+    const reservation = await prisma.reservation.findUnique({
+        where: { id: reservationId }
+    });
+
+    if (!reservation) throw new Error("Réservation non trouvée");
+    
+    // Autoriser soit le proprio soit le locataire à proposer une contre-offre de prix
+    const isOwner = reservation.proprietaire_id === userId;
+    const isRenter = reservation.locataire_id === userId;
+    
+    if (!isOwner && !isRenter) throw new Error("Non autorisé");
+
+    const updated = await prisma.reservation.update({
+        where: { id: reservationId },
+        data: { 
+            prix_propose: proposedPrice,
             statut: "contre_offre"
         }
     });
