@@ -1,8 +1,7 @@
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma/client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -67,7 +66,49 @@ model User {
 
   // Application relations
   ownedTools     Tool[]    @relation("UserTools")
-  rentals        Booking[] @relation("RenterBookings")
+  rentals        Reservation[] @relation("RenterReservations")
+  ownerReservations Reservation[] @relation("OwnerReservations")
+
+  // Messaging relations
+  conversations  Conversation[] @relation("UserConversations")
+  messages       Message[]      @relation("UserMessages")
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Participants
+  participants User[] @relation("UserConversations")
+
+  // Messages in this conversation
+  messages     Message[]
+
+  // Optional: Link to a tool or booking to provide context
+  toolId       String?
+  tool         Tool?     @relation(fields: [toolId], references: [id])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String
+  createdAt      DateTime     @default(now())
+  
+  // Sender
+  senderId       String
+  sender         User         @relation("UserMessages", fields: [senderId], references: [id])
+
+  // Conversation
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  // Type for conditional rendering (e.g., "TEXT", "BOOKING_REQUEST")
+  type           String       @default("TEXT")
+  
+  // Optional: link to a reservation for action buttons
+  reservationId      String?
+  reservation        Reservation?     @relation(fields: [reservationId], references: [id])
 }
 
 model Tool {
@@ -83,21 +124,24 @@ model Tool {
   ownerId     String
   owner       User      @relation("UserTools", fields: [ownerId], references: [id])
 
-  bookings    Booking[]
+  reservations    Reservation[]
+  conversations Conversation[]
 }
 
-model Booking {
-  id         String   @id @default(cuid())
-  startDate  DateTime
-  endDate    DateTime
-  status     String   @default("PENDING")
-  totalPrice Float
+model Reservation {
+  id           String   @id @default(cuid())
+  outil_id     String
+  locataire_id String
+  proprietaire_id String
+  date_debut   DateTime
+  date_fin     DateTime
+  statut       String   @default("en_attente") // en_attente, valide, annule, contre_offre
+  prix_total   Float
 
-  // Relation avec Tool (Outil loué)
-  toolId     String
-  tool       Tool     @relation(fields: [toolId], references: [id])
-
-  // Relation avec User (Locataire)
-  renterId   String
-  renter     User     @relation("RenterBookings", fields: [renterId], references: [id])
+  // Relations
+  outil        Tool     @relation(fields: [outil_id], references: [id])
+  locataire    User     @relation("RenterReservations", fields: [locataire_id], references: [id])
+  proprietaire User     @relation("OwnerReservations", fields: [proprietaire_id], references: [id])
+  
+  messages     Message[]
 }
