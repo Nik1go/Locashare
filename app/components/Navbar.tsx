@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Wrench, LogOut, User, Loader2 } from "lucide-react";
+import { Wrench, LogOut, User, Loader2, MessageCircle } from "lucide-react";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
@@ -12,13 +12,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-blue-600 text-white p-2 rounded-lg group-hover:bg-blue-700 transition">
-              <Wrench size={24} />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-slate-800">
-              Prêt-Outils
-            </span>
+          <Link href="/" className="flex items-center group">
+            <img src="/logo.png" alt="Karyacool Logo" className="h-10 w-auto" />
           </Link>
 
           {/* Navigation */}
@@ -34,7 +29,11 @@ export default function Navbar() {
                   Ajouter un outil
                 </Link>
                 <Link href="/dashboard" className="hover:text-blue-600 transition">
-                  Mon tableau de bord
+                  Tableau de bord
+                </Link>
+                <Link href="/conversations" className="hover:text-blue-600 transition flex items-center gap-1.5">
+                  <MessageCircle size={18} />
+                  Discussion
                 </Link>
               </>
             )}

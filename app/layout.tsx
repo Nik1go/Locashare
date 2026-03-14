@@ -8,8 +8,11 @@ import Navbar from "./components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Prêt-Outils",
+  title: "Karyacool",
   description: "Location d'outils entre particuliers et professionnels",
+  icons: {
+    icon: "/icon.jpeg",
+  },
 };
 
 export default function RootLayout({
@@ -32,7 +35,7 @@ export default function RootLayout({
           {/* Footer */}
           <footer className="bg-white border-t border-slate-200 mt-auto py-8 w-full">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-slate-500 text-sm">© {new Date().getFullYear()} Prêt-Outils. Tous droits réservés.</p>
+              <p className="text-slate-500 text-sm">© {new Date().getFullYear()} Karyacool. Tous droits réservés.</p>
               <div className="flex gap-4 text-sm text-slate-500">
                 <Link href="#" className="hover:text-slate-900">Mentions légales</Link>
                 <Link href="#" className="hover:text-slate-900">Contact</Link>

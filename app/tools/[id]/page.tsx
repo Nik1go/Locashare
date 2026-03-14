@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MapPin, User, Tag, ArrowLeft } from "lucide-react";
 import BookingForm from "./BookingForm";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 // Next.js 15: params is a Promise that must be awaited
 export default async function ToolPage({
@@ -12,11 +14,13 @@ export default async function ToolPage({
     params: Promise<{ id: string }>;
 }) {
     const resolvedParams = await params;
+    const session = await getServerSession(authOptions);
 
     const tool = await prisma.tool.findUnique({
         where: { id: resolvedParams.id },
         include: {
             owner: true,
+            reservations: true,
         },
     });
 
@@ -98,7 +102,13 @@ export default async function ToolPage({
                             Sélectionnez vos dates pour valider la location avec le propriétaire.
                         </p>
 
-                        <BookingForm toolId={tool.id} pricePerDay={tool.pricePerDay} />
+                        <BookingForm 
+                            toolId={tool.id} 
+                            pricePerDay={tool.pricePerDay} 
+                            isLoggedIn={!!session} 
+                            isOwner={session?.user?.id === tool.ownerId}
+                            bookedDates={tool.reservations.filter(r => r.statut === "valide")}
+                        />
                     </div>
                 </div>
             </div>

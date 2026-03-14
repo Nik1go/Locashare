@@ -24,7 +24,7 @@ export default async function Home() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {tools.map((tool) => (
+        {tools.map((tool: any) => (
           <div key={tool.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full group">
             {/* Image section */}
             <div className="relative h-56 w-full bg-slate-100 overflow-hidden">
