@@ -94,6 +94,8 @@ export default function ChatInterface({
 
             setMessages([...messages, newMessage]);
             setInputValue("");
+            setShowCounterOffer(null);
+            setShowPriceCounter(null);
 
             await sendMessage(conversation.id, inputValue);
             router.refresh();
@@ -221,9 +223,9 @@ export default function ChatInterface({
     };
 
     return (
-        <div className="flex-grow flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
+        <div className="flex-grow flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             {/* Header */}
-            <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center overflow-hidden">
                         {otherParticipant?.image ? (
@@ -233,8 +235,8 @@ export default function ChatInterface({
                         )}
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-900">{otherParticipant?.name || "Membre LocaShare"}</h3>
-                        <p className="text-xs text-slate-500">
+                        <h3 className="font-bold text-slate-900 dark:text-white">{otherParticipant?.name || "Membre LocaShare"}</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                             {conversation.tool ? `Sujet : ${conversation.tool.title}` : 'Discussion'}
                         </p>
                     </div>
@@ -256,8 +258,8 @@ export default function ChatInterface({
                         return (
                             <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                                 <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl p-4 shadow-sm ${isMe
-                                        ? 'bg-blue-600 text-white rounded-tr-none'
-                                        : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
+                                        ? 'bg-blue-600 dark:bg-blue-700 text-white rounded-tr-none'
+                                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-none'
                                     }`}>
                                     {isSystem && (
                                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100/20 text-xs font-bold uppercase tracking-wider">
@@ -268,7 +270,7 @@ export default function ChatInterface({
                                     <p className="text-sm whitespace-pre-line leading-relaxed">{msg.content}</p>
 
                                     {msg.reservation && (
-                                        <div className={`mt-3 p-2 rounded-lg text-xs border ${isMe ? 'bg-blue-700/30 border-blue-400/30' : 'bg-slate-50 border-slate-100'
+                                        <div className={`mt-3 p-2 rounded-lg text-xs border ${isMe ? 'bg-blue-700/30 border-blue-400/30' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700'
                                             }`}>
                                             <div className="flex justify-between items-center">
                                                 <span>Statut :</span>
@@ -340,7 +342,7 @@ export default function ChatInterface({
                                 )}
 
                                 {/* Counter Offer Form */}
-                                {showCounterOffer === msg.reservationId && (
+                                {showCounterOffer && showCounterOffer === msg.reservationId && (
                                     <div className="mt-4 p-4 bg-white border border-blue-200 rounded-xl shadow-lg w-full max-w-sm animate-in zoom-in-95 duration-200">
                                         <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
                                             <Settings2 size={16} className="text-blue-500" />
@@ -384,7 +386,7 @@ export default function ChatInterface({
                                 )}
 
                                 {/* Price Counter Form */}
-                                {showPriceCounter === msg.reservationId && (
+                                {showPriceCounter && showPriceCounter === msg.reservationId && (
                                     <div className="mt-4 p-4 bg-white border border-slate-200 rounded-xl shadow-lg w-full max-w-sm animate-in zoom-in-95 duration-200">
                                         <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
                                             <Settings2 size={16} className="text-blue-500" />
@@ -447,7 +449,7 @@ export default function ChatInterface({
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-slate-100 bg-white">
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
                 <form
                     onSubmit={handleSend}
                     className="flex items-center gap-2"
@@ -457,12 +459,12 @@ export default function ChatInterface({
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder="Écrivez votre message..."
-                        className="flex-grow bg-slate-100 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
+                        className="flex-grow bg-slate-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 transition-all outline-none"
                     />
                     <button
                         type="submit"
                         disabled={!inputValue.trim() || isSending}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white p-3 rounded-xl transition-all shadow-md hover:shadow-lg flex-shrink-0"
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white p-3 rounded-xl transition-all shadow-md hover:shadow-lg flex-shrink-0"
                     >
                         <Send size={20} />
                     </button>

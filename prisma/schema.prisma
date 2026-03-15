@@ -119,6 +119,8 @@ model Tool {
   category    String
   location    String
   imageUrl    String?
+  latitude    Float?
+  longitude   Float?
 
   // Relation avec User (Propriétaire)
   ownerId     String

@@ -50,6 +50,78 @@ export async function createTool(formData: FormData) {
     revalidatePath("/");
     revalidatePath("/dashboard");
 
-    // Rediriger vers l'accueil
+    // Rediriger vers le dashboard
     redirect("/dashboard");
+}
+
+export async function deleteTool(toolId: string) {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+        return { success: false, error: "Vous devez être connecté." };
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+    });
+
+    if (!user) {
+        return { success: false, error: "Utilisateur non trouvé." };
+    }
+
+    const tool = await prisma.tool.findUnique({
+        where: { id: toolId },
+    });
+
+    if (!tool || tool.ownerId !== user.id) {
+        return { success: false, error: "Vous n'avez pas l'autorisation de supprimer cet outil." };
+    }
+
+    try {
+        await prisma.tool.delete({
+            where: { id: toolId },
+        });
+
+        revalidatePath("/");
+        revalidatePath("/dashboard");
+        return { success: true };
+    } catch (error) {
+        console.error("Delete tool error:", error);
+        return { success: false, error: "Erreur lors de la suppression." };
+    }
+}
+
+export async function updateToolPrice(toolId: string, newPrice: number) {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+        return { success: false, error: "Vous devez être connecté." };
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+    });
+
+    if (!user) {
+        return { success: false, error: "Utilisateur non trouvé." };
+    }
+
+    const tool = await prisma.tool.findUnique({
+        where: { id: toolId },
+    });
+
+    if (!tool || tool.ownerId !== user.id) {
+        return { success: false, error: "Vous n'avez pas l'autorisation de modifier cet outil." };
+    }
+
+    try {
+        await prisma.tool.update({
+            where: { id: toolId },
+            data: { pricePerDay: newPrice },
+        });
+
+        revalidatePath(`/tools/${toolId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Update price error:", error);
+        return { success: false, error: "Erreur lors de la mise à jour du prix." };
+    }
 }
